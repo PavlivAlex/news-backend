@@ -1,9 +1,15 @@
 import express from "express";
 import Article from "../schemas/Article.js";
-import { ResponseNewsModel } from "../modelsDB/ArticleModel.js";
+import {
+  ResponseLikedNewsModel,
+  ResponseNewsModel,
+} from "../modelsDB/ArticleModel.js";
 
 const newsService = {
-  getNews: async (params: any, res: express.Response): Promise<ResponseNewsModel | null> => {
+  getNews: async (
+    params: any,
+    res: express.Response
+  ): Promise<ResponseNewsModel | null> => {
     try {
       const { lang, pageSize = 10 } = params;
 
@@ -14,20 +20,29 @@ const newsService = {
 
       const articles = await Article.find();
 
-      const findedArticles = articles.reduce((acc, article) => {
-        if (article.language === lang && acc.length < pageSize) {
-          acc.push(article.toObject());
-        }
+      const findedArticles = articles.reduce(
+        (acc, article) => {
+          if (article.language === lang) {
+            if (acc.articles.length < pageSize) {
+              acc.articles.push(article.toObject());
+            }
+            acc.totalArticlesByLang += 1;
+          }
 
-        return acc;
-      }, []);
+          return acc;
+        },
+        { articles: [], totalArticlesByLang: 0 }
+      );
 
       if (!articles || !articles.length) {
         res.status(400).json({ message: "Articles not found" });
         return null;
       }
 
-      return { articles: findedArticles, totalArticles: findedArticles.length };
+      return {
+        articles: findedArticles.articles,
+        totalArticles: findedArticles.totalArticlesByLang,
+      };
     } catch (e) {
       res.status(500).send({ message: "Something went wrong" });
       return null;
@@ -52,6 +67,38 @@ const newsService = {
       await article.save();
 
       return article.toObject();
+    } catch (e) {
+      res.status(500).send({ message: "Something went wrong" });
+      return null;
+    }
+  },
+
+  getLikedNews: async (
+    params: any,
+    res: express.Response
+  ): Promise<ResponseLikedNewsModel | null> => {
+    try {
+      const { lang } = params;
+
+      if (!lang) {
+        res.status(400).json({ message: "Parameter lang is required" });
+        return null;
+      }
+
+      const articles = await Article.find();
+
+      const likedArticles = articles.filter(
+        (article) => lang === article.language && article.isLiked
+      );
+
+      if (!likedArticles || !likedArticles.length) {
+        res.status(400).json({ message: "Articles not found" });
+        return null;
+      }
+
+      return {
+        data: { articles: likedArticles },
+      };
     } catch (e) {
       res.status(500).send({ message: "Something went wrong" });
       return null;

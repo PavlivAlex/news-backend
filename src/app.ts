@@ -17,6 +17,8 @@ app.use(function (_, res: any, next: any) {
   next();
 });
 
+console.log(process.env.DB_URL);
+
 app.use("/api/news", newsRouter);
 
 async function start() {

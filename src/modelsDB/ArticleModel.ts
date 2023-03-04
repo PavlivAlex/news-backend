@@ -14,3 +14,9 @@ export interface ResponseNewsModel {
   articles: ArticleModel[];
   totalArticles: number;
 }
+
+export interface ResponseLikedNewsModel {
+  data: {
+    articles: ArticleModel[];
+  };
+}
